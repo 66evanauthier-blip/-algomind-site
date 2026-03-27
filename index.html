@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlgoMind — Automatisation de Stratégies Forex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#06060A; --bg2:#0B0B10; --bg3:#101016; --bg4:#15151C;
+  --gold:#C8A96E; --gd:#6E5428; --gg:rgba(200,169,110,.1);
+  --cream:#ECE7DB;
+  --t:rgba(236,231,219,1); --tm:rgba(236,231,219,.6); --tl:rgba(236,231,219,.28);
+  --green:#3ECFA4; --red:#F05F5F;
+  --b:rgba(200,169,110,.1); --bh:rgba(200,169,110,.28);
+  --px:72px; --xs:8px; --sm:16px; --md:32px; --lg:64px; --xl:96px; --xxl:160px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--t);font-family:'Cormorant Garamond',Georgia,serif;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;cursor:pointer;}
+ul{list-style:none;}
+::-webkit-scrollbar{width:2px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--gd);}
+body::after{content:'';position:fixed;inset:0;z-index:9000;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.02;pointer-events:none;}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:28px var(--px);border-bottom:1px solid transparent;transition:background .4s,border-color .4s,padding .4s,backdrop-filter .4s;}
+nav.sc{background:rgba(6,6,10,.95);backdrop-filter:blur(16px);border-color:var(--b);padding:20px var(--px);}
+.n-logo{display:flex;align-items:center;gap:14px;cursor:pointer;}
+.n-sig{width:30px;height:30px;border:1px solid var(--gd);display:grid;place-items:center;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:var(--gold);}
+.n-nm{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.28em;color:var(--cream);}
+.n-nm b{color:var(--gold);}
+.n-menu{display:flex;gap:80px;}
+.n-menu a{font-family:'Space Mono',monospace;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--cream);transition:color .2s;}
+.n-menu a:hover,.n-menu a.active{color:var(--gold);}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden;padding:0 var(--px);}
+.hero-glow{position:absolute;top:-15%;left:18%;width:1000px;height:1000px;background:radial-gradient(ellipse,rgba(200,169,110,.055) 0%,transparent 58%);pointer-events:none;}
+.hero-vline{position:absolute;top:0;left:var(--px);width:1px;height:100%;background:linear-gradient(to bottom,transparent 0%,var(--bh) 25%,var(--bh) 75%,transparent 100%);opacity:.3;}
+#chart{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+.hero-content{flex:1;display:flex;flex-direction:column;justify-content:flex-start;padding-top:100px;padding-bottom:0;padding-left:56px;position:relative;z-index:2;}
+.h-h1{font-size:clamp(56px,8.6vw,122px);font-weight:300;line-height:.9;letter-spacing:-.015em;animation:up .8s ease .06s both;}
+.h-h1 em{font-style:italic;color:var(--gold);}
+.h-h1 .l2{display:block;padding-left:clamp(80px,14%,180px);color:var(--tm);}
+.h-h1 .l3{display:block;font-size:clamp(22px,3vw,46px);font-style:italic;color:var(--tl);font-weight:300;padding-left:clamp(160px,28%,340px);margin-top:10px;}
+.h-btns{display:flex;align-items:center;gap:var(--lg);animation:up .8s ease .22s both;margin-top:var(--lg);}
+.btn-g{background:var(--gold);color:#000;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding:16px 44px;display:inline-block;transition:background .22s,transform .22s;cursor:pointer;}
+.btn-g:hover{background:var(--cream);transform:translateY(-2px);}
+.btn-l{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--cream);display:flex;align-items:center;gap:10px;transition:color .22s;cursor:pointer;}
+.btn-l span{transition:transform .22s;}
+.btn-l:hover{color:var(--gold);}
+.btn-l:hover span{transform:translateX(4px);}
+
+/* TICKER */
+.ticker{height:48px;background:rgba(11,11,16,.9);border-top:1px solid var(--b);display:flex;align-items:center;overflow:hidden;position:relative;z-index:1;backdrop-filter:blur(10px);}
+.t-pill{flex-shrink:0;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.22em;color:var(--gold);padding:0 20px;border-right:1px solid var(--b);height:100%;display:flex;align-items:center;}
+.t-scroll{display:flex;gap:52px;padding-left:28px;white-space:nowrap;animation:scroll 32s linear infinite;}
+@keyframes scroll{to{transform:translateX(-50%);}}
+.ti{display:flex;align-items:center;gap:10px;font-family:'Space Mono',monospace;font-size:11px;}
+.tp{color:var(--tm);}.tv{color:var(--cream);font-weight:700;}.tu{color:var(--green);}.td{color:var(--red);}
+
+/* SECTIONS */
+.sec{padding:var(--xxl) var(--px);}
+.sec-alt{background:var(--bg2);}
+.eye{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:14px;margin-bottom:var(--md);}
+.eye::before{content:'';width:28px;height:1px;background:var(--gold);}
+.stit{font-size:clamp(34px,4.5vw,60px);font-weight:300;line-height:1.05;}
+.stit em{font-style:italic;color:var(--gold);}
+.lead{font-size:17px;line-height:1.95;font-weight:300;color:var(--tm);max-width:480px;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:var(--xxl);align-items:center;margin-bottom:var(--xl);}
+
+/* BOT SECTION */
+.b-ring{position:absolute;border:1px solid var(--b);border-radius:50%;pointer-events:none;}
+.b-feats{margin-top:var(--xl);}
+.b-feat{display:grid;grid-template-columns:40px 1fr;gap:var(--sm);align-items:start;padding:var(--md) 0;border-bottom:1px solid var(--b);}
+.b-feat:first-child{border-top:1px solid var(--b);}
+.f-n{font-family:'Space Mono',monospace;font-size:9px;color:var(--gd);letter-spacing:.1em;padding-top:4px;}
+.f-t{font-size:18px;font-weight:300;margin-bottom:6px;}
+.f-d{font-size:14px;color:var(--tl);line-height:1.75;font-weight:300;}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--b);margin-top:var(--xl);}
+.plan{background:var(--bg2);padding:var(--lg);transition:background .3s;}
+.plan:hover{background:var(--bg3);}
+.plan.hi{background:var(--bg3);border:1px solid rgba(200,169,110,.2);margin:-1px;}
+.pl{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--gd);margin-bottom:var(--sm);}
+.pn{font-size:20px;font-weight:300;margin-bottom:var(--xs);}
+.pp{font-size:36px;font-weight:300;color:var(--gold);letter-spacing:-.02em;}
+.pm{font-family:'Space Mono',monospace;font-size:8px;color:var(--tl);letter-spacing:.1em;margin-bottom:var(--sm);}
+.ps{width:20px;height:1px;background:var(--gd);margin:var(--sm) 0;}
+.pf{display:flex;flex-direction:column;gap:10px;}
+.pf li{font-size:13px;color:var(--tm);display:flex;align-items:flex-start;gap:10px;}
+.pf li::before{content:'';flex-shrink:0;width:12px;height:1px;background:var(--gold);margin-top:9px;}
+.badge{display:inline-block;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.2em;text-transform:uppercase;background:var(--gold);color:#000;padding:5px 12px;margin-bottom:var(--sm);}
+
+/* CTA */
+.cta{padding:var(--xxl) var(--px);text-align:center;position:relative;overflow:hidden;}
+.cta-halo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:800px;height:800px;background:radial-gradient(ellipse,rgba(200,169,110,.045) 0%,transparent 55%);pointer-events:none;}
+.cta-ov{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.36em;text-transform:uppercase;color:var(--gold);margin-bottom:var(--lg);display:flex;align-items:center;justify-content:center;gap:16px;}
+.cta-ov::before,.cta-ov::after{content:'';width:36px;height:1px;background:var(--gold);}
+.cta-h{font-size:clamp(40px,6vw,80px);font-weight:300;line-height:1;margin-bottom:var(--xl);}
+.cta-h em{font-style:italic;color:var(--gold);}
+.cta-row{display:flex;justify-content:center;align-items:center;gap:var(--lg);}
+
+/* PAGE HERO (bots + auto) */
+.page-hero{min-height:55vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 var(--px) var(--xl);position:relative;overflow:hidden;border-bottom:1px solid var(--b);}
+.page-hero-glow{position:absolute;top:-20%;right:-5%;width:800px;height:800px;background:radial-gradient(ellipse,rgba(200,169,110,.05) 0%,transparent 58%);pointer-events:none;}
+.page-hero-vline{position:absolute;top:0;left:var(--px);width:1px;height:100%;background:linear-gradient(to bottom,transparent 0%,var(--bh) 60%,transparent 100%);opacity:.25;}
+.page-hero-num{position:absolute;top:var(--xl);right:var(--px);font-size:clamp(100px,18vw,220px);font-weight:300;font-style:italic;color:rgba(200,169,110,.04);line-height:1;pointer-events:none;}
+.ph-eye{display:flex;align-items:center;gap:16px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.38em;text-transform:uppercase;color:var(--gold);margin-bottom:var(--md);padding-top:140px;}
+.ph-eye::before{content:'';width:32px;height:1px;background:var(--gold);}
+.ph-h1{font-size:clamp(44px,6.5vw,96px);font-weight:300;line-height:.95;letter-spacing:-.015em;}
+.ph-h1 em{font-style:italic;color:var(--gold);}
+.ph-sub{max-width:560px;font-size:19px;line-height:1.85;font-weight:300;color:var(--tm);margin-top:var(--lg);}
+
+/* BOTS PAGE */
+.bots-grid{display:flex;flex-direction:column;gap:2px;margin-top:var(--xl);}
+.bot-card{display:grid;grid-template-columns:1fr 1fr;background:var(--bg3);position:relative;overflow:hidden;transition:background .3s;}
+.bot-card:hover{background:var(--bg4);}
+.bot-card.premium{background:var(--bg2);border:1px solid rgba(200,169,110,.18);}
+.bot-card.premium::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--gold),transparent);}
+.bot-left{padding:var(--xl) var(--lg);border-right:1px solid var(--b);display:flex;flex-direction:column;}
+.bot-right{padding:var(--xl) var(--lg);display:flex;flex-direction:column;justify-content:space-between;}
+.bot-tag{display:inline-block;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.2em;text-transform:uppercase;background:var(--gold);color:#000;padding:5px 14px;margin-bottom:var(--lg);}
+.bot-tag-outline{display:inline-block;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--gd);color:var(--gd);padding:5px 14px;margin-bottom:var(--lg);}
+.bot-num{font-family:'Space Mono',monospace;font-size:9px;color:var(--gd);letter-spacing:.15em;margin-bottom:var(--sm);}
+.bot-name{font-size:clamp(28px,3.5vw,48px);font-weight:300;line-height:1.1;margin-bottom:var(--md);}
+.bot-name em{font-style:italic;color:var(--gold);}
+.bot-desc{font-size:16px;line-height:1.9;color:var(--tm);font-weight:300;flex:1;}
+.perf-wrap{margin-top:var(--lg);display:flex;align-items:center;gap:var(--md);}
+.perf-num{font-size:clamp(56px,7vw,80px);font-weight:300;color:var(--gold);letter-spacing:-.03em;line-height:1;}
+.perf-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--tl);margin-bottom:4px;}
+.perf-sub{font-size:13px;color:var(--tm);}
+.bot-specs{display:flex;flex-direction:column;}
+.spec-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--b);}
+.spec-row:first-child{border-top:1px solid var(--b);}
+.spec-key{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--tl);}
+.spec-val{font-size:15px;color:var(--t);}
+.bot-price-wrap{margin-top:var(--lg);}
+.bot-price{font-size:clamp(44px,5vw,64px);font-weight:300;color:var(--gold);letter-spacing:-.03em;line-height:1;display:flex;align-items:flex-start;gap:8px;}
+.bot-price-cur{font-size:24px;padding-top:8px;color:var(--gd);}
+.bot-price-note{font-family:'Space Mono',monospace;font-size:9px;color:var(--tl);letter-spacing:.1em;margin-top:var(--xs);margin-bottom:var(--lg);}
+.bot-cta{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;background:var(--gold);color:#000;font-weight:700;padding:16px 40px;transition:background .22s,transform .22s;cursor:pointer;}
+.bot-cta:hover{background:var(--cream);transform:translateY(-2px);}
+.bot-cta-outline{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--gd);color:var(--gold);padding:16px 40px;transition:background .22s,border-color .22s;cursor:pointer;}
+.bot-cta-outline:hover{background:var(--gg);border-color:var(--gold);}
+.bot-deco{position:absolute;bottom:-30px;right:var(--lg);font-size:180px;font-weight:300;font-style:italic;color:rgba(200,169,110,.03);line-height:1;pointer-events:none;}
+.disclaimer{margin-top:var(--xl);padding:var(--md) var(--lg);border-left:2px solid var(--gd);background:rgba(200,169,110,.03);}
+.disclaimer p{font-family:'Space Mono',monospace;font-size:9px;color:var(--tl);letter-spacing:.08em;line-height:1.9;}
+
+/* AUTOMATISATION PAGE */
+.process{display:flex;flex-direction:column;gap:2px;margin-top:var(--xl);}
+.step{display:grid;grid-template-columns:80px 1fr;gap:var(--lg);align-items:start;background:var(--bg3);padding:var(--lg);transition:background .3s;border-left:1px solid var(--b);position:relative;}
+.step:hover{background:var(--bg4);}
+.step::before{content:'';position:absolute;top:0;left:0;width:2px;height:0;background:var(--gold);transition:height .5s ease;}
+.step:hover::before{height:100%;}
+.step-n{font-size:clamp(44px,5vw,64px);font-weight:300;color:rgba(200,169,110,.15);line-height:1;font-style:italic;letter-spacing:-.02em;}
+.step-title{font-size:24px;font-weight:300;margin-bottom:var(--sm);line-height:1.2;}
+.step-title em{font-style:italic;color:var(--gold);}
+.step-desc{font-size:15px;line-height:1.85;color:var(--tm);font-weight:300;}
+.step-tag{display:inline-block;margin-top:var(--sm);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--gd);border:1px solid var(--gd);padding:4px 10px;}
+.pricing-wrap{margin-top:var(--xl);}
+.price-card{background:var(--bg3);border:1px solid var(--bh);padding:var(--xl) var(--lg);display:grid;grid-template-columns:1fr 1fr;gap:var(--xxl);align-items:start;position:relative;overflow:hidden;}
+.price-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--gold),transparent);}
+.price-badge{display:inline-block;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.2em;text-transform:uppercase;background:var(--gold);color:#000;padding:5px 14px;margin-bottom:var(--md);}
+.price-name{font-size:clamp(32px,4vw,52px);font-weight:300;line-height:1.1;margin-bottom:var(--sm);}
+.price-name em{font-style:italic;color:var(--gold);}
+.price-desc{font-size:16px;line-height:1.9;color:var(--tm);font-weight:300;margin-bottom:var(--lg);}
+.price-amount{display:flex;align-items:flex-end;gap:12px;margin-bottom:var(--xs);}
+.price-num{font-size:clamp(64px,8vw,96px);font-weight:300;color:var(--gold);letter-spacing:-.03em;line-height:1;}
+.price-cur{font-size:32px;font-weight:300;color:var(--gd);padding-bottom:8px;}
+.price-note{font-family:'Space Mono',monospace;font-size:9px;color:var(--tl);letter-spacing:.12em;}
+.price-old{font-family:'Space Mono',monospace;font-size:10px;color:var(--tl);letter-spacing:.1em;text-decoration:line-through;margin-top:var(--xs);}
+.price-cta{display:inline-block;margin-top:var(--lg);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;background:var(--gold);color:#000;font-weight:700;padding:18px 48px;transition:background .22s,transform .22s;cursor:pointer;}
+.price-cta:hover{background:var(--cream);transform:translateY(-2px);}
+.price-sep{width:28px;height:1px;background:var(--gd);margin-bottom:var(--lg);}
+.incl-title{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:var(--md);}
+.incl-list{display:flex;flex-direction:column;gap:16px;}
+.incl-list li{display:flex;align-items:flex-start;gap:16px;font-size:15px;color:var(--t);line-height:1.5;}
+.incl-list li::before{content:'';flex-shrink:0;width:20px;height:1px;background:var(--gold);margin-top:10px;}
+.incl-list li span{font-size:13px;color:var(--tm);display:block;margin-top:2px;}
+.price-deco{position:absolute;bottom:-20px;right:40px;font-size:180px;font-weight:300;font-style:italic;color:rgba(200,169,110,.03);line-height:1;pointer-events:none;}
+.guar-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--b);margin-top:var(--xl);}
+.guar-card{background:var(--bg3);padding:var(--lg) 40px;transition:background .3s;}
+.guar-card:hover{background:var(--bg4);}
+.guar-icon{font-size:28px;margin-bottom:var(--md);line-height:1;}
+.guar-title{font-size:22px;font-weight:300;margin-bottom:var(--sm);}
+.guar-title em{font-style:italic;color:var(--gold);}
+.guar-desc{font-size:14px;line-height:1.85;color:var(--tm);font-weight:300;}
+.faq{display:flex;flex-direction:column;gap:2px;margin-top:var(--xl);}
+.faq-item{background:var(--bg3);border-left:1px solid var(--b);overflow:hidden;}
+.faq-q{padding:var(--md) var(--lg);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;}
+.faq-q-text{font-size:20px;font-weight:300;}
+.faq-toggle{font-family:'Space Mono',monospace;font-size:16px;color:var(--gold);transition:transform .3s;flex-shrink:0;margin-left:var(--lg);}
+.faq-item.open .faq-toggle{transform:rotate(45deg);}
+.faq-a{font-size:15px;line-height:1.9;color:var(--tm);font-weight:300;padding:0 var(--lg) 0;max-height:0;overflow:hidden;transition:max-height .4s ease,padding .4s ease;}
+.faq-item.open .faq-a{max-height:300px;padding-bottom:var(--md);}
+
+/* FOOTER */
+footer{background:var(--bg2);border-top:1px solid var(--b);padding:var(--lg) var(--px);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:var(--lg);}
+.f-logo{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--gold);}
+.f-leg{font-family:'Space Mono',monospace;font-size:8px;color:var(--tl);text-align:right;letter-spacing:.08em;line-height:1.9;}
+
+@media(max-width:900px){
+  :root{--px:24px;--xxl:96px;}
+  nav{padding:18px var(--px);}
+  .n-menu{gap:24px;}
+  .n-menu a{font-size:10px;}
+  .two,.price-card,.guar-grid{grid-template-columns:1fr;}
+  .bot-card{grid-template-columns:1fr;}
+  .bot-left{border-right:none;border-bottom:1px solid var(--b);}
+  .plans{grid-template-columns:1fr;}
+  footer{grid-template-columns:1fr;text-align:center;}
+  .f-leg{text-align:center;}
+}
+@keyframes up{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+@keyframes bg{0%,100%{opacity:1;}50%{opacity:.3;}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="n-logo" onclick="showPage('accueil')">
+    <div class="n-sig">AM</div>
+    <div class="n-nm">ALGO<b>MIND</b></div>
+  </div>
+  <ul class="n-menu">
+    <li><a onclick="showPage('accueil')" id="nav-accueil" class="active">Accueil</a></li>
+    <li><a onclick="showPage('bots')" id="nav-bots">Nos bots</a></li>
+    <li><a onclick="showPage('auto')" id="nav-auto">Automatiser ma stratégie</a></li>
+  </ul>
+</nav>
+
+<!-- ══════════════════════════════════════
+     PAGE ACCUEIL
+══════════════════════════════════════ -->
+<div id="page-accueil" class="page active">
+
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-vline"></div>
+  <canvas id="chart"></canvas>
+  <div class="hero-content">
+    <h1 class="h-h1">
+      Tradez<br>
+      <em>moins.</em>
+      <span class="l2">Gagnez</span>
+      <span class="l3">plus.</span>
+    </h1>
+    <div class="h-btns">
+      <a class="btn-g" onclick="showPage('auto')">Automatiser ma stratégie</a>
+      <a class="btn-l" onclick="showPage('bots')">Nos bots <span>→</span></a>
+    </div>
+  </div>
+  <div class="ticker">
+    <div class="t-pill">LIVE</div>
+    <div class="t-scroll">
+      <div class="ti"><span class="tp">EUR/USD</span><span class="tv">—</span><span class="tu">—</span></div>
+      <div class="ti"><span class="tp">GBP/USD</span><span class="tv">—</span><span class="td">—</span></div>
+      <div class="ti"><span class="tp">USD/JPY</span><span class="tv">—</span><span class="tu">—</span></div>
+      <div class="ti"><span class="tp">XAU/USD</span><span class="tv">—</span><span class="tu">—</span></div>
+      <div class="ti"><span class="tp">USD/CHF</span><span class="tv">—</span><span class="td">—</span></div>
+      <div class="ti"><span class="tp">AUD/USD</span><span class="tv">—</span><span class="tu">—</span></div>
+      <div class="ti"><span class="tp">NZD/USD</span><span class="tv">—</span><span class="td">—</span></div>
+      <div class="ti"><span class="tp">EUR/GBP</span><span class="tv">—</span><span class="tu">—</span></div>
+      <div class="ti"><span class="tp">EUR/USD</span><span class="tv">—</span><span class="tu">—</span></div>
+      <div class="ti"><span class="tp">GBP/USD</span><span class="tv">—</span><span class="td">—</span></div>
+      <div class="ti"><span class="tp">USD/JPY</span><span class="tv">—</span><span class="tu">—</span></div>
+      <div class="ti"><span class="tp">XAU/USD</span><span class="tv">—</span><span class="tu">—</span></div>
+      <div class="ti"><span class="tp">USD/CHF</span><span class="tv">—</span><span class="td">—</span></div>
+      <div class="ti"><span class="tp">AUD/USD</span><span class="tv">—</span><span class="tu">—</span></div>
+      <div class="ti"><span class="tp">NZD/USD</span><span class="tv">—</span><span class="td">—</span></div>
+      <div class="ti"><span class="tp">EUR/GBP</span><span class="tv">—</span><span class="tu">—</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" style="position:relative;overflow:hidden;">
+  <div class="b-ring" style="width:640px;height:640px;right:-220px;top:50%;transform:translateY(-50%);"></div>
+  <div class="b-ring" style="width:380px;height:380px;right:-60px;top:50%;transform:translateY(-50%);"></div>
+  <div style="max-width:660px">
+    <h2 class="stit">Les bots qui tradent pour vous<br><em>& automatiser ma stratégie</em></h2>
+    <p class="lead" style="margin-top:32px">Deux algorithmes développés et éprouvés en conditions réelles. Ils s'exécutent 24h/24, sans émotion, sans fatigue.</p>
+    <div class="b-feats">
+      <div class="b-feat">
+        <div class="f-n">01</div>
+        <div>
+          <div class="f-t">ATH Breaker — H4</div>
+          <div class="f-d">Se positionne à la cassure des plus hauts historiques sur H4. Suit les grandes tendances haussières avec un objectif de ×50 sur l'année.</div>
+        </div>
+      </div>
+      <div class="b-feat">
+        <div class="f-n">02</div>
+        <div>
+          <div class="f-t">Tokyo Range Breaker — M15</div>
+          <div class="f-d">Exploite la cassure du range de la session Tokyo à l'ouverture de Londres en M15. Stratégie mécanique et répétable chaque jour. Objectif ×10 sur l'année.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="plans">
+    <div class="plan hi">
+      <div class="badge">Flagship</div>
+      <div class="pl">ATH Breaker</div>
+      <div class="pn">Casseur d'ATH</div>
+      <div class="pm">Timeframe H4</div>
+      <div class="ps"></div>
+      <ul class="pf">
+        <li>Cassure des plus hauts historiques</li>
+        <li>Objectif ×50 sur l'année</li>
+        <li>Licence à vie · MT4/MT5</li>
+      </ul>
+      <a onclick="showPage('bots')" style="display:inline-block;margin-top:32px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;background:var(--gold);color:#000;font-weight:700;padding:14px 28px;cursor:pointer;">Voir le bot →</a>
+    </div>
+    <div class="plan">
+      <div class="pl">Tokyo Range Breaker</div>
+      <div class="pn">Casseur de Tokyo Range</div>
+      <div class="pm">Timeframe M15</div>
+      <div class="ps"></div>
+      <ul class="pf">
+        <li>Cassure du range de Tokyo</li>
+        <li>Objectif ×10 sur l'année</li>
+        <li>Licence à vie · MT4/MT5</li>
+      </ul>
+      <a onclick="showPage('bots')" style="display:inline-block;margin-top:32px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;border:1px solid var(--gd);color:var(--gold);padding:14px 28px;cursor:pointer;">Voir le bot →</a>
+    </div>
+    <div class="plan" style="background:var(--bg3);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:48px 32px;">
+      <div style="font-size:clamp(28px,3vw,40px);font-weight:300;line-height:1.2;margin-bottom:24px;">Votre propre<br><em style="font-style:italic;color:var(--gold);">stratégie automatisée</em></div>
+      <a onclick="showPage('auto')" style="display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;border:1px solid var(--gd);color:var(--gold);padding:14px 28px;cursor:pointer;">Automatiser ma stratégie →</a>
+    </div>
+  </div>
+</section>
+
+<section class="cta sec-alt">
+  <div class="cta-halo"></div>
+  <div class="cta-ov">Prêt à changer de niveau</div>
+  <h2 class="cta-h">Votre succès<br>commence <em>maintenant</em></h2>
+  <div class="cta-row">
+    <a href="mailto:contact@algomind.fr" class="btn-g">Prendre contact</a>
+  </div>
+</section>
+
+<footer>
+  <div class="f-logo">ALGOMIND</div>
+  <div></div>
+  <div class="f-leg">© AlgoMind — Tous droits réservés<br>Le trading comporte des risques de perte en capital.</div>
+</footer>
+
+</div><!-- /page-accueil -->
+
+<!-- ══════════════════════════════════════
+     PAGE NOS BOTS
+══════════════════════════════════════ -->
+<div id="page-bots" class="page">
+
+<div class="page-hero">
+  <div class="page-hero-glow"></div>
+  <div class="page-hero-vline"></div>
+  <div class="page-hero-num">02</div>
+  <div class="ph-eye">Algorithmes exclusifs</div>
+  <h1 class="ph-h1">Nos bots.<br><em>Nos résultats.</em></h1>
+  <p class="ph-sub">Deux algorithmes développés et éprouvés en conditions réelles. Chaque bot exploite une inefficacité précise du marché Forex.</p>
+</div>
+
+<section class="sec">
+  <div class="eye">Algorithmes disponibles</div>
+  <h2 class="stit">Choisissez votre <em>edge</em></h2>
+
+  <div class="bots-grid">
+
+    <div class="bot-card premium">
+      <div class="bot-left">
+        <div class="bot-tag">Flagship · Exclusif</div>
+        <div class="bot-num">01 — ATH Breaker</div>
+        <h3 class="bot-name">Casseur d'<em>ATH</em></h3>
+        <p class="bot-desc">Ce bot opère sur le timeframe H4 et se positionne à la cassure des plus hauts historiques. Lorsque le prix brise une zone de résistance majeure avec momentum, l'algorithme entre en position et laisse courir le trade jusqu'à l'objectif. Une stratégie de suivi de tendance pure, là où les mouvements sont les plus explosifs.</p>
+        <div class="perf-wrap">
+          <div class="perf-num">×50</div>
+          <div>
+            <div class="perf-label">Performance visée</div>
+            <div class="perf-sub">Sur l'année · Backtesté et validé en conditions réelles</div>
+          </div>
+        </div>
+      </div>
+      <div class="bot-right">
+        <div class="bot-specs">
+          <div class="spec-row"><span class="spec-key">Timeframe</span><span class="spec-val">H4</span></div>
+          <div class="spec-row"><span class="spec-key">Stratégie</span><span class="spec-val">Cassure ATH</span></div>
+          <div class="spec-row"><span class="spec-key">Plateforme</span><span class="spec-val">MT4 / MT5</span></div>
+          <div class="spec-row"><span class="spec-key">Marché</span><span class="spec-val">Forex · Majors</span></div>
+          <div class="spec-row"><span class="spec-key">Licence</span><span class="spec-val">1 compte · À vie</span></div>
+        </div>
+        <div class="bot-price-wrap">
+          <div class="bot-price-note">Accès à vie · Mises à jour incluses</div>
+          <a href="mailto:contact@algomind.fr" class="bot-cta">Acquérir l'ATH Breaker</a>
+        </div>
+      </div>
+      <div class="bot-deco">ATH</div>
+    </div>
+
+    <div class="bot-card">
+      <div class="bot-left">
+        <div class="bot-tag-outline">Stratégie validée</div>
+        <div class="bot-num">02 — Tokyo Range Breaker</div>
+        <h3 class="bot-name">Casseur de <em>Tokyo Range</em></h3>
+        <p class="bot-desc">Ce bot exploite une des inefficacités les plus régulières du Forex : la session de Tokyo forme chaque nuit un range de consolidation. À l'ouverture de Londres, le prix casse ce range avec impulsion. L'algorithme opère en M15, entre à la cassure et sécurise rapidement la position.</p>
+        <div class="perf-wrap">
+          <div class="perf-num">×10</div>
+          <div>
+            <div class="perf-label">Performance visée</div>
+            <div class="perf-sub">Sur l'année · Backtesté et validé en conditions réelles</div>
+          </div>
+        </div>
+      </div>
+      <div class="bot-right">
+        <div class="bot-specs">
+          <div class="spec-row"><span class="spec-key">Timeframe</span><span class="spec-val">M15</span></div>
+          <div class="spec-row"><span class="spec-key">Stratégie</span><span class="spec-val">Cassure Tokyo Range</span></div>
+          <div class="spec-row"><span class="spec-key">Plateforme</span><span class="spec-val">MT4 / MT5</span></div>
+          <div class="spec-row"><span class="spec-key">Session</span><span class="spec-val">Tokyo → Londres</span></div>
+          <div class="spec-row"><span class="spec-key">Licence</span><span class="spec-val">1 compte · À vie</span></div>
+        </div>
+        <div class="bot-price-wrap">
+          <div class="bot-price-note">Accès à vie · Mises à jour incluses</div>
+          <a href="mailto:contact@algomind.fr" class="bot-cta-outline">Acquérir le Tokyo Breaker</a>
+        </div>
+      </div>
+      <div class="bot-deco">TKY</div>
+    </div>
+
+  </div>
+
+  <div class="disclaimer">
+    <p>Les performances indiquées sont basées sur des backtests et des résultats en conditions réelles passées. Elles ne constituent pas une garantie de résultats futurs. Le trading sur les marchés Forex comporte des risques significatifs de perte en capital.</p>
+  </div>
+</section>
+
+<section class="cta sec-alt">
+  <div class="cta-halo"></div>
+  <div class="cta-ov">Prêt à trader autrement</div>
+  <h2 class="cta-h">Un edge algorithmique.<br><em>Dès aujourd'hui.</em></h2>
+  <div class="cta-row">
+    <a href="mailto:contact@algomind.fr" class="btn-g">Contacter pour acquérir</a>
+    <a class="btn-l" onclick="showPage('auto')">Automatiser ma stratégie <span>→</span></a>
+  </div>
+</section>
+
+<footer>
+  <div class="f-logo">ALGOMIND</div>
+  <div></div>
+  <div class="f-leg">© AlgoMind — Tous droits réservés<br>Le trading comporte des risques de perte en capital.</div>
+</footer>
+
+</div><!-- /page-bots -->
+
+<!-- ══════════════════════════════════════
+     PAGE AUTOMATISER MA STRATÉGIE
+══════════════════════════════════════ -->
+<div id="page-auto" class="page">
+
+<div class="page-hero">
+  <div class="page-hero-glow"></div>
+  <div class="page-hero-vline"></div>
+  <div class="page-hero-num">01</div>
+  <div class="ph-eye">Service sur mesure</div>
+  <h1 class="ph-h1">Votre stratégie.<br><em>Automatisée.</em></h1>
+  <p class="ph-sub">Vous avez une méthode de trading qui fonctionne. Nous la transformons en un bot algorithmique sur mesure — précis, discipliné, opérationnel 24h/24.</p>
+</div>
+
+<section class="sec">
+  <div class="two">
+    <div>
+      <div class="eye">Comment ça marche</div>
+      <h2 class="stit">De votre idée<br>au <em>bot opérationnel</em></h2>
+    </div>
+    <p class="lead">Un processus structuré en 4 étapes. Vous apportez votre stratégie, nous apportons l'expertise technique.</p>
+  </div>
+  <div class="process">
+    <div class="step">
+      <div class="step-n">01</div>
+      <div>
+        <div class="step-title">Analyse de votre <em>stratégie</em></div>
+        <div class="step-desc">Vous nous expliquez votre méthode en détail — entrées, sorties, gestion du risque, timeframes. Un appel de 60 minutes suffit pour tout cadrer.</div>
+        <div class="step-tag">Appel stratégique · 60 min</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">02</div>
+      <div>
+        <div class="step-title">Spécification &amp; <em>validation</em></div>
+        <div class="step-desc">Nous rédigeons un document de spécification technique complet que vous validez. Chaque règle est traduite en logique algorithmique précise.</div>
+        <div class="step-tag">Document · 48-72h</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">03</div>
+      <div>
+        <div class="step-title">Développement &amp; <em>backtesting</em></div>
+        <div class="step-desc">Nous codons votre bot sur MetaTrader 4/5. Il est ensuite testé sur données historiques pour valider sa cohérence avec votre stratégie.</div>
+        <div class="step-tag">Développement · 7-14 jours</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">04</div>
+      <div>
+        <div class="step-title">Livraison &amp; <em>accompagnement</em></div>
+        <div class="step-desc">Vous recevez votre bot complet avec documentation. Une session de mise en route est incluse. Support 30 jours après livraison.</div>
+        <div class="step-tag">Livraison · Clé en main</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec-alt">
+  <div>
+    <div class="eye">Tarif</div>
+    <h2 class="stit">Un investissement <em>unique</em></h2>
+  </div>
+  <div class="pricing-wrap">
+    <div class="price-card">
+      <div>
+        <div class="price-badge">Bot sur mesure · Clé en main</div>
+        <div class="price-name">Automatisation<br><em>complète</em></div>
+        <p class="price-desc">Votre stratégie codée, testée et livrée. Un bot qui trade exactement selon vos règles, 24h/24.</p>
+        <a href="mailto:contact@algomind.fr" class="price-cta">Démarrer mon projet</a>
+      </div>
+      <div>
+        <div class="price-sep"></div>
+        <div class="incl-title">Ce qui est inclus</div>
+        <ul class="incl-list">
+          <li>Appel stratégique 60 min<span>Analyse complète de votre méthode</span></li>
+          <li>Document de spécification<span>Chaque règle traduite en logique algorithmique</span></li>
+          <li>Développement du bot MT4/MT5<span>Code propre, commenté, prêt pour la production</span></li>
+          <li>Backtesting sur données historiques<span>Validation de la cohérence avec votre stratégie</span></li>
+          <li>Session de mise en route<span>Installation et déploiement sur votre compte live</span></li>
+          <li>Support 30 jours<span>Corrections et ajustements mineurs inclus</span></li>
+        </ul>
+      </div>
+      <div class="price-deco">Bot</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="eye">Nos engagements</div>
+  <h2 class="stit">Pourquoi nous <em>faire confiance</em></h2>
+  <div class="guar-grid">
+    <div class="guar-card">
+      <div class="guar-icon">⚡</div>
+      <div class="guar-title">Délai <em>garanti</em></div>
+      <p class="guar-desc">Livraison en 7 à 14 jours ouvrés. Un calendrier précis vous est communiqué dès la validation des spécifications.</p>
+    </div>
+    <div class="guar-card">
+      <div class="guar-icon">🎯</div>
+      <div class="guar-title">Fidélité à votre <em>stratégie</em></div>
+      <p class="guar-desc">Le bot trade exactement selon vos règles. Vous validez chaque règle avant le développement.</p>
+    </div>
+    <div class="guar-card">
+      <div class="guar-icon">🔒</div>
+      <div class="guar-title">Confidentialité <em>totale</em></div>
+      <p class="guar-desc">Accord de confidentialité signé à la commande. Code source livré intégralement.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec-alt">
+  <div class="two" style="margin-bottom:var(--xl)">
+    <div>
+      <div class="eye">Questions fréquentes</div>
+      <h2 class="stit">Tout ce que vous <em>devez savoir</em></h2>
+    </div>
+    <p class="lead">Des doutes ? On répond à tout avant que vous vous lanciez.</p>
+  </div>
+  <div class="faq">
+    <div class="faq-item">
+      <div class="faq-q"><span class="faq-q-text">Ma stratégie doit-elle être très précise ?</span><span class="faq-toggle">+</span></div>
+      <div class="faq-a">Pas besoin d'un document technique. Si vous pouvez expliquer vos conditions d'entrée, de sortie et votre gestion du risque, c'est suffisant. Notre rôle est de transformer votre méthode en logique algorithmique précise.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q"><span class="faq-q-text">Sur quelle plateforme le bot sera-t-il développé ?</span><span class="faq-toggle">+</span></div>
+      <div class="faq-a">MetaTrader 4 ou MetaTrader 5 selon votre broker. Nous nous adaptons à votre environnement de trading existant.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q"><span class="faq-q-text">Le bot peut-il trader toutes les paires ?</span><span class="faq-toggle">+</span></div>
+      <div class="faq-a">Oui. Le bot est développé pour les instruments et timeframes que vous utilisez.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q"><span class="faq-q-text">Que se passe-t-il si le bot ne correspond pas ?</span><span class="faq-toggle">+</span></div>
+      <div class="faq-a">Le processus de spécification existe précisément pour éviter ça. Si après livraison vous constatez un écart avec les spécifications validées, nous corrigeons sans frais supplémentaires.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q"><span class="faq-q-text">Comment se passe le paiement ?</span><span class="faq-toggle">+</span></div>
+      <div class="faq-a">Le paiement s'effectue en totalité à la commande avant le démarrage du développement.</div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="cta-halo"></div>
+  <div class="cta-ov">Prêt à automatiser</div>
+  <h2 class="cta-h">Votre stratégie mérite<br>d'être <em>sans limite</em></h2>
+  <div class="cta-row">
+    <a href="mailto:contact@algomind.fr" class="btn-g">Démarrer mon projet</a>
+    <a class="btn-l" onclick="showPage('accueil')">Retour à l'accueil <span>→</span></a>
+  </div>
+</section>
+
+<footer>
+  <div class="f-logo">ALGOMIND</div>
+  <div></div>
+  <div class="f-leg">© AlgoMind — Tous droits réservés<br>Le trading comporte des risques de perte en capital.</div>
+</footer>
+
+</div><!-- /page-auto -->
+
+<script>
+/* ── Navigation entre pages ── */
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.n-menu a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+  if (name === 'accueil') initChart();
+}
+
+/* ── Nav scroll ── */
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('sc', scrollY > 50);
+}, { passive: true });
+
+/* ── FAQ ── */
+document.querySelectorAll('.faq-item').forEach(item => {
+  item.querySelector('.faq-q').addEventListener('click', () => {
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  });
+});
+
+/* ── Courbe de trading ── */
+function initChart() {
+  const cv = document.getElementById('chart');
+  if (!cv) return;
+  const cx = cv.getContext('2d');
+  let W = 0, H = 0, pts = [], t = 0;
+  const WIN = 280;
+
+  function gen() {
+    const n = 600, a = [];
+    let v = H * 0.72;
+    for (let i = 0; i < n; i++) {
+      const d = (Math.random() - 0.46) * (H * 0.07);
+      const pull = (H * 0.55 - v) * 0.01;
+      v = Math.max(H * 0.08, Math.min(H * 0.93, v + d + pull));
+      a.push(v);
+    }
+    return a;
+  }
+
+  function resize() {
+    W = cv.width  = cv.offsetWidth;
+    H = cv.height = cv.offsetHeight;
+    if (H > 10) { pts = gen(); t = WIN; }
+  }
+
+  requestAnimationFrame(() => requestAnimationFrame(resize));
+  window.addEventListener('resize', resize, { passive: true });
+
+  function draw() {
+    requestAnimationFrame(draw);
+    if (!W || !H || pts.length < 2) return;
+    cx.clearRect(0, 0, W, H);
+
+    const s  = Math.max(0, Math.floor(t) - WIN);
+    const sl = pts.slice(s, Math.floor(t));
+    if (sl.length < 2) { t += 0.4; return; }
+    const xs = W / WIN;
+
+    cx.strokeStyle = 'rgba(200,169,110,.03)'; cx.lineWidth = 1;
+    [0.2, 0.35, 0.5, 0.65, 0.8].forEach(f => {
+      cx.beginPath(); cx.moveTo(0, H * f); cx.lineTo(W, H * f); cx.stroke();
+    });
+
+    const g = cx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, 'rgba(200,169,110,.2)');
+    g.addColorStop(0.5, 'rgba(200,169,110,.05)');
+    g.addColorStop(1, 'rgba(200,169,110,0)');
+    cx.beginPath();
+    sl.forEach((y, i) => i === 0 ? cx.moveTo(i * xs, y) : cx.lineTo(i * xs, y));
+    cx.lineTo((sl.length - 1) * xs, H); cx.lineTo(0, H); cx.closePath();
+    cx.fillStyle = g; cx.fill();
+
+    cx.beginPath(); cx.strokeStyle = 'rgba(200,169,110,.09)'; cx.lineWidth = 18; cx.lineJoin = 'round'; cx.lineCap = 'round';
+    sl.forEach((y, i) => i === 0 ? cx.moveTo(i * xs, y) : cx.lineTo(i * xs, y)); cx.stroke();
+
+    cx.beginPath(); cx.strokeStyle = '#C8A96E'; cx.lineWidth = 3; cx.lineJoin = 'round'; cx.lineCap = 'round';
+    sl.forEach((y, i) => i === 0 ? cx.moveTo(i * xs, y) : cx.lineTo(i * xs, y)); cx.stroke();
+
+    const lx = (sl.length - 1) * xs, ly = sl[sl.length - 1];
+    const p = 0.5 + 0.5 * Math.sin(Date.now() / 260);
+    [[22 + p * 12, 0.05], [13 + p * 7, 0.13], [6 + p * 3, 0.28]].forEach(([r, a]) => {
+      cx.beginPath(); cx.arc(lx, ly, r, 0, Math.PI * 2);
+      cx.strokeStyle = `rgba(200,169,110,${a * p})`; cx.lineWidth = 1; cx.stroke();
+    });
+    cx.beginPath(); cx.arc(lx, ly, 4.5, 0, Math.PI * 2); cx.fillStyle = '#C8A96E'; cx.fill();
+
+    t += 0.3;
+    if (t >= pts.length) { pts = [...pts.slice(Math.floor(t) - WIN), ...gen()]; t = WIN; }
+  }
+  draw();
+}
+
+initChart();
+</script>
+</body>
+</html>
